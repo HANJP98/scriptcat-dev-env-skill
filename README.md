@@ -20,6 +20,8 @@
 
 而且它把「换台机器要不要重新踩一遍坑」这个问题解决了：**所有踩过的坑都写进了 `SKILL.md`**，AI 读一遍就知道哪些方案行不通、`workbuddy` 不是合法 agent 名、`426 Upgrade Required` 其实是正常的、AI 会话里直接启动的浏览器为什么下一条命令就消失。
 
+> **本仓库是这套环境唯一维护的文档源。** 不在别处另存部署说明或脚本备份；换机、重装、排障、版本订正都改这里。实机运行副本只放在 `%USERPROFILE%\EdgeAgent\`，改了模板同步过去即可。含真实账号、路径、信任指纹、脚本名的本机实况不写进公开仓库。
+
 ## 架构
 
 ```mermaid
@@ -107,6 +109,7 @@ AI 会跑完其余全部步骤。这四件涉及账号、登录态与授权，�
 ├── docs/
 │   ├── deployment-guide.md        # 完整部署指南（命令 + 解释）
 │   ├── architecture.md            # 组件分工与选型理由
+│   ├── mcp-parameters.md          # chrome-devtools-mcp 1.12.0 CLI 参数速查
 │   └── troubleshooting.md         # 排障速查表
 ├── scripts/
 │   ├── start-agent-edge.bat       # 启动独立 profile + 9222（幂等）

@@ -64,7 +64,9 @@ node -p "require('./node_modules/chrome-devtools-mcp/package.json').version"
 node "<EDGEAGENT_DIR>/mcp/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js" --help
 ```
 
-改过 `mcp.json` 后信任指纹会变，**必须重新点信任并重启宿主**。
+完整的 CLI 参数分组、默认值与截图相关参数见 [`mcp-parameters.md`](mcp-parameters.md)；升级 `chrome-devtools-mcp` 后务必重新对照 `--help`。
+
+改过 `mcp.json` 后信任指纹会变，**重新点一次「信任」即可，实测当场生效、不必重启宿主**；但改动命令行参数（如 `--workspace`）本身需要重启 MCP 进程才生效。
 
 ## 4. 启动器、快捷方式与自检脚本（AI）
 
@@ -185,9 +187,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<EDGEAGENT_DIR>\start-agent
 
 脚本是幂等的：CDP 已就绪时不会重复开窗。
 
-## 9. 备份（AI）
+## 9. 同步运行副本（AI）
 
-把 `scripts/` 的 5 个文件和 `config/package*.json` 复制到你的工作区 / 同步盘。`profile\` **不要**备份到公开仓库，也不要跨机器复制。
+把 `scripts/` 的 5 个文件放到 `%USERPROFILE%\EdgeAgent\` 作为实机运行副本——快捷方式和 `mcp.json` 引用的都是这份；`config/package*.json` 用于锁定 MCP 版本。
+
+**不要另建「备份」目录或第二份部署说明**：本仓库是唯一维护源，改了模板同步运行副本即可。`profile\` 不进公开仓库、不跨机器复制。
 
 ---
 
@@ -216,9 +220,9 @@ sctl status; sctl scriptcats; sctl get; sctl browsers
 
 参考值（2026-11-07 实机）：`doctor.ps1` 30 项通过 / 0 警告 / 0 失败；`probe-mcp.mjs` 拿到 37 个工具（含 5 个扩展工具）、`RESULT: PASS`；`sctl get` 能列出脚本；`sctl browsers` 为空。
 
-## 15. 回头订正文档（AI）
+## 15. 回头订正本仓库（AI）
 
-把实际版本 / 路径、第 7/10/12 步的输出、遇到的失败与退路写回你的部署文档。文档是下次重建的唯一依据，必须与实况一致——**不要只写工作日志就结束**。
+把实际版本 / 路径、第 7/10/12 步的输出、遇到的失败与退路写回本仓库的 `SKILL.md` / `docs/`，提交并推送。**本仓库是下次重建的唯一依据**，必须与实况一致——不要只写工作日志就结束，也不要在别处另存一份实况文档；含账号、绝对路径、信任指纹、脚本名的本机实况不进公开仓库。
 
 ---
 

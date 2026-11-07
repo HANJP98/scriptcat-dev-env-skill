@@ -22,9 +22,11 @@ license: MIT
 
 1. **AI 先自己跑完**：凡是脚本、命令、文件写入能完成的步骤，直接执行，不要先问、不要先出计划等确认。
 2. **只有必须本人操作的才交给本人**，并且**一次性列全、不要挤牙膏**。典型四类：连接器页点「信任」+ 重启宿主、扩展安装 / 网站登录 / 权限策略勾选、`sctl connect` 配对码、浏览器确认页。
-3. **跑完回头订正文档**：把实测到的版本、路径、输出、失败与退路写回部署文档；不要只写工作日志就结束。文档是下次重建的唯一依据。
+3. **跑完回头订正本仓库**：把实测到的版本、路径、输出、失败与退路写回本仓库的 `SKILL.md` / `docs/` 并提交；不要只写工作日志就结束。**本仓库是这套环境唯一维护的文档源**——不要在别处另存一份部署说明、脚本备份或实况档案，多份副本必然过时。
 
 配套约定：如需为宿主环境单独启动浏览器，先确认用户是否已长期授权；**未授权时不要擅自代启**。
+
+> **维护约定**：换机、重装、排障、版本订正都以本仓库为准。`scripts/` 是可移植模板，实机运行副本放在 `%USERPROFILE%\EdgeAgent\`（快捷方式与 `mcp.json` 引用的是这份）；改了模板要同步运行副本，但**不再另建备份目录**。本机实况（真实账号、绝对路径、PID、信任指纹、已有脚本名、权限策略）不写进公开仓库。
 
 ## 环境总览
 
@@ -56,13 +58,13 @@ license: MIT
 | 6 | 装 sctl | **AI** | `irm https://raw.githubusercontent.com/scriptscat/sctl/main/scripts/install.ps1 \| iex`；临时加 PATH；`sctl version` | 输出版本号 + commit |
 | 7 | 注册后台服务 | **AI**（被拦则转用户） | `sctl service install` + `sctl service status` | `daemon running at 127.0.0.1:8643`、`starts at login` |
 | 8 | 启动浏览器 | **AI**（若已授权） | 用系统 shell 执行快捷方式（`start-agent-edge-detached.ps1`），**不要**在 AI 会话内直接 `Start-Process` | CDP `/json/version` 返回 `Edg/...`，且 Edge 跨命令存活 |
-| 9 | 备份同步 | **AI** | 脚本 + `package*.json` 复制到用户的工作区/同步盘 | 文件数一致 |
+| 9 | 同步运行副本 | **AI** | 把 `scripts/` 的可移植文件复制到 `%USERPROFILE%\EdgeAgent\` 作为运行副本（快捷方式、`mcp.json` 引用的是这里）；**不要另建备份目录**，仓库即唯一源 | 运行副本与仓库模板一致 |
 | 10 | **点信任 + 重启宿主** | **用户** | 连接器管理页 → 自定义连接器 → 对 `chrome-devtools` 点**信任**；必要时重启宿主 | 出现 `mcp__chrome-devtools__*` 工具组 |
 | 11 | **装扩展 / 登录 / 权限策略** | **用户** | 在 **EdgeAgent 窗口**装 ScriptCat 及需要的扩展、登录目标网站；ScriptCat 工具 → 外部接入 → 打开开关、选权限策略 | 扩展页可见、开关已开 |
 | 12 | **配对** | **用户** | 终端 `sctl connect` → 把 8 位码输入 **EdgeAgent 窗口**的 ScriptCat「重新接入 / Enroll」；**日常 Edge 的 ScriptCat 不要也 Enroll** | `sctl status` → `extension connected: true`、`scriptcat: online` |
 | 13 | **browser use 扩展** | **用户** | 宿主「设置 > 智能体 > 浏览器操控」→ 安装 Edge 扩展 | `browsers_list` 出现 `type: extension` 的 Edge |
 | 14 | 端到端验收 | **AI** | `doctor.ps1`；`node probe-mcp.mjs`；MCP `list_pages` / `take_snapshot`；`sctl status` / `sctl scriptcats` / `sctl get` | 见下方验收清单 |
-| 15 | **回头订正文档** | **AI** | 把实际版本 / 路径、第 7/10/12 步输出、失败与退路写回部署文档 | 文档与实况一致，无过时表述 |
+| 15 | **回头订正本仓库** | **AI** | 把实际版本 / 路径、第 7/10/12 步输出、失败与退路写回 `SKILL.md` / `docs/`，提交并推送 | 仓库与实况一致，无过时表述，无第二份文档源 |
 
 **只把第 10–13 步交给用户，一次性列全。** 配对码 2 分钟有效、只显示一次、不得进入对话或日志。
 第 7 步若被安全策略拦截（某些 AI 会话禁用 `schtasks.exe`），直接转给用户并说明原因，**不要重试、不要找等价绕过**。
@@ -116,7 +118,8 @@ license: MIT
 | --- | --- |
 | `docs/deployment-guide.md` | 完整部署指南（逐步命令与解释） |
 | `docs/architecture.md` | 四组件分工、链路与选型理由 |
-| `docs/troubleshooting.md` | 排障速查表（含原始输出示例） |
+| `docs/mcp-parameters.md` | chrome-devtools-mcp 1.12.0 CLI 参数速查（连接 / 工具集 / 路径 / 安全 / 截图） |
+| `docs/troubleshooting.md` | 排障速查表（含原始输出示例与发布网络问题） |
 | `scripts/start-agent-edge.bat` | 启动带独立 profile + 9222 的 Edge（幂等，CDP 握手检测） |
 | `scripts/make-shortcut.ps1` | 生成桌面版与 AI 版两个快捷方式（AI 版带 `nopause`、隐藏窗口） |
 | `scripts/start-agent-edge-detached.ps1` | AI 代启浏览器、轮询 CDP 就绪、已就绪则不重复开窗 |
