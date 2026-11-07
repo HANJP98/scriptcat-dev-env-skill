@@ -1,148 +1,176 @@
 # scriptcat-dev-env-skill
 
-> 一个 Agent Skill：让 AI 在 Windows 上自动搭建、重建和排查「用脚本猫开发 / 调试油猴脚本」的完整环境。
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**English**: An [Agent Skill](https://agentskills.io/) that teaches an AI agent how to build, rebuild and troubleshoot a Windows userscript development environment on top of [ScriptCat](https://docs.scriptcat.org/): a dedicated Edge profile driven by `chrome-devtools-mcp` (CDP 9222), ScriptCat's External Access via `sctl` (WebSocket 8643), the two official ScriptCat skills, and WorkBuddy browser use for the everyday profile. All scripts, config templates and hard-won troubleshooting notes are included and free of machine-specific values.
+一个 [Agent Skill](https://agentskills.io/)：让 AI 代理在 Windows 上搭建、重建并排查「用[脚本猫 ScriptCat](https://docs.scriptcat.org/) 开发和调试油猴脚本」的完整环境。
+
+> **English**: An Agent Skill that teaches an AI agent how to set up, rebuild and troubleshoot a Windows userscript development environment. It combines a dedicated Microsoft Edge profile driven by [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) over CDP, ScriptCat External Access via [`sctl`](https://github.com/scriptscat/sctl), the two official ScriptCat skills, and WorkBuddy browser use for the everyday profile. The repository ships `SKILL.md`, portable launcher/diagnostic scripts, configuration templates and troubleshooting notes. It contains no machine-specific values. Quick start: install it as a skill (`npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y`), open a new session, then ask the agent to rebuild the userscript development environment. Requirements: Windows 10/11, Edge Chromium 136+, Node.js 20.19+/22.12+, an AI client with MCP and Agent Skills support. MIT licensed.
 
 ---
 
-## 它解决什么问题
+## 这是什么
 
-写油猴脚本最烦的不是写代码，是**验证闭环**：改一版 → 装进浏览器 → 打开目标页 → 看 console / 网络请求 → 再改一版。人工做要反复切窗口、点扩展、刷新页面。
+油猴脚本的开发成本主要在验证闭环：每次改动都要重新安装脚本、打开目标页面、查看控制台和网络请求，再改下一版。这个仓库把闭环所需的环境固化成一份可供 AI 代理阅读和执行的说明，以及一组可直接使用的脚本与配置模板。
 
-这套环境把闭环拆成互不冲突的通道，让 AI 全程代办：
+它包含：
 
-- **脚本本身**交给 `sctl` + ScriptCat「外部接入」（列出 / 读源码 / 安装 / 编辑 / 启停 / 删除）
-- **页面效果**交给 `chrome-devtools-mcp`（DOM / console / network / 截图 / 执行 JS / 性能 trace）
-- **日常上网**仍在自己的浏览器，用 WorkBuddy browser use，登录态互不干扰
+- `SKILL.md`：AI 代理的入口文件，写清部署步骤、分工、验收标准、已知失败原因与红线。
+- `docs/`：完整部署指南、组件架构、MCP 参数速查、排障速查表。
+- `scripts/`：浏览器启动器、快捷方式生成、只读自检、MCP 端到端探测。
+- `config/`：MCP 服务配置模板与锁定版本的依赖清单。
 
-而且它把「换台机器要不要重新踩一遍坑」这个问题解决了：**所有踩过的坑都写进了 `SKILL.md`**，AI 读一遍就知道哪些方案行不通、`workbuddy` 不是合法 agent 名、`426 Upgrade Required` 其实是正常的、AI 会话里直接启动的浏览器为什么下一条命令就消失。
+AI 代理读取 `SKILL.md` 后，可自行完成环境探查、安装依赖、写配置、生成启动器、注册服务、启动浏览器和验收；涉及账号、登录态与授权的步骤仍由使用者完成。
 
-> **本仓库是这套环境唯一维护的文档源。** 不在别处另存部署说明或脚本备份；换机、重装、排障、版本订正都改这里。实机运行副本只放在 `%USERPROFILE%\EdgeAgent\`，改了模板同步过去即可。含真实账号、路径、信任指纹、脚本名的本机实况不写进公开仓库。
+### 适用与不适用范围
 
-## 架构
+| 场景 | 是否适用 |
+| --- | --- |
+| 首次搭建、换机重建、重装后恢复这套环境 | 适用 |
+| 某条链路失效（调试端口连不上、外部接入掉线、MCP 工具组消失） | 适用 |
+| 判断某个操作该走哪条工具链 | 适用 |
+| 只想写一个 `.user.js`，不需要部署环境 | 不适用，用官方 `scriptcat-userscript` skill |
+| 只操作日常网页 | 不适用，用 browser use |
+| macOS / Linux | 不适用，脚本与结论基于 Windows 实测 |
+
+## 组件分工
+
+| 组件 | 所在浏览器配置 | 通道 | 职责 |
+| --- | --- | --- | --- |
+| `chrome-devtools-mcp` 1.12.0 | 独立开发配置目录 | CDP `9222` | DOM、控制台、网络请求、截图、执行 JS、性能分析 |
+| `sctl` + ScriptCat 外部接入 | 同一开发配置目录 | WebSocket `8643` | 列出、读取、安装、编辑、启停、删除脚本 |
+| 官方 skill `scriptcat-userscript`、`sctl` | 用户级 skills 目录 | 本地文件 | 脚本写法规则、骨架与静态检查、sctl 命令用法 |
+| WorkBuddy browser use | 日常浏览器默认配置 | 扩展桥接 | 日常页面操作，复用已有登录态 |
+
+三条通道可同时运行，同一任务内不要混用。开发配置目录独立保存扩展、脚本与登录态，与日常上网互不干扰。
+
+**不安装 `sctl Browser` 扩展**：它的页面调试能力通过 `chrome.debugger` 附着标签页，与 CDP MCP 争用同一目标；CDP MCP 已覆盖这部分能力。ScriptCat 外部接入只走扩展消息，不占用调试器，因此与 `9222` 不冲突。
 
 ```mermaid
 flowchart LR
-  subgraph DEV["写代码用 · EdgeAgent 独立 profile"]
+  subgraph DEV["开发用 · 独立配置目录"]
     SC["ScriptCat 扩展<br/>脚本 + 外部接入"]
     CDP["CDP 9222"]
   end
-  subgraph DAILY["日常用 · 默认 profile"]
+  subgraph DAILY["日常用 · 默认配置目录"]
     BU["browser use 扩展"]
   end
-  AI["AI Agent / WorkBuddy"]
+  AI["AI 代理"]
   MCP["chrome-devtools-mcp 1.12.0"]
   SCTL["sctl serve 8643"]
 
-  AI -->|"scripts_* 与管理命令"| SCTL
+  AI -->|"脚本管理命令"| SCTL
   SCTL <-->|WebSocket| SC
   AI -->|MCP 工具| MCP
   MCP <-->|CDP| CDP
-  AI -->|"mcp__browser__*"| BU
+  AI -->|"browser use 工具"| BU
 
-  DEV -.->|"登录态 / 扩展 / 脚本全部持久化"| P[("EdgeAgent\\profile")]
-  DAILY -.-> P2[("日常 User Data")]
+  DEV -.->|"扩展 / 脚本 / 登录态持久化"| P[("独立配置目录")]
+  DAILY -.-> P2[("日常配置目录")]
 ```
-
-**为什么不装 `sctl Browser` 扩展**：它的 `page` / `debug` / `cdp` 用 `chrome.debugger` 附着标签页，与 CDP MCP 抢同一 target；CDP MCP 已覆盖并超过它的页面侧能力。不装就没有调试器冲突和「正在调试」信息栏。ScriptCat 外部接入只走扩展消息，不 attach debugger。
 
 ## 快速开始
 
-### 方式 A：装成 skill（推荐）
+### 方式 A：安装为 skill（推荐）
 
-把本仓库放进宿主的 skills 目录，之后直接对 AI 说「重建油猴脚本开发环境」即可。
+把仓库放进宿主的 skills 目录，之后直接对 AI 代理说「重建油猴脚本开发环境」。
 
 ```powershell
 git clone https://github.com/HANJP98/scriptcat-dev-env-skill.git "$env:USERPROFILE\.codebuddy\skills\scriptcat-dev-env-skill"
-# WorkBuddy 读 ~/.workbuddy/skills/ 时，建一个目录联接保持单一数据源：
+
+# 宿主读取 ~/.workbuddy/skills/ 时，用目录联接保持单一副本
 New-Item -ItemType Junction `
   -Path "$env:USERPROFILE\.workbuddy\skills\scriptcat-dev-env-skill" `
   -Target "$env:USERPROFILE\.codebuddy\skills\scriptcat-dev-env-skill"
 ```
 
-> 若宿主直接读 `~/.workbuddy/skills/`，clone 到那里即可，无需 Junction。
-> **新装 skill 当次会话不会加载，请开一个新会话再让它写脚本。**
-
-也可以用官方安装器（如果宿主在支持列表里）：
+若宿主直接读取 `~/.workbuddy/skills/`，克隆到该目录即可，无需目录联接。也可以使用官方安装器（宿主在支持列表内时）：
 
 ```bash
 npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y
 ```
 
+> 新安装的 skill 在当次会话不会加载，请开一个新会话再开始写脚本。
+
 ### 方式 B：手动部署
 
-按 [`docs/deployment-guide.md`](docs/deployment-guide.md) 逐步执行；`scripts/` 下是可直接用的启动器、自检器和端到端探测脚本，`config/` 是配置模板。
+按 [`docs/deployment-guide.md`](docs/deployment-guide.md) 逐步执行。`scripts/` 下的文件可直接使用，`config/` 中的占位符需替换为本机实际探测值。
 
-### 方式 C：换机 / 重装
+### 方式 C：换机或重装
 
-`git clone` 本仓库 → 在新会话里让 AI 读 `SKILL.md` → 它会按 15 步 SOP 自己跑完 11 步，把剩下必须本人操作的 4 步一次性列给你。
+克隆本仓库 → 在新会话中让 AI 代理读取 `SKILL.md` → 它会执行所有可由脚本和命令完成的步骤，并把需要账号或授权的操作一次性列出。
 
 ## 前置条件
 
 | 组件 | 要求 |
 | --- | --- |
-| OS | Windows 10 / 11 |
-| 浏览器 | Microsoft Edge（Chromium **136+**，因为 136+ 对默认 profile 忽略调试端口） |
-| Node.js | ≥ 20.19 / ≥ 22.12 / ≥ 23（**21.x 不受支持**） |
-| 宿主 | WorkBuddy / CodeBuddy 或任何支持 MCP + Agent Skills 的 AI 客户端 |
-| 扩展 | ScriptCat（装在**开发 profile** 里） |
-| 命令 | `sctl`（安装脚本会自动装） |
+| 操作系统 | Windows 10 / 11 |
+| 浏览器 | Microsoft Edge（Chromium 136+；136 起默认配置目录会忽略调试端口，因此必须使用独立配置目录） |
+| Node.js | ≥ 20.19、≥ 22.12 或 ≥ 23（21.x 不受 `chrome-devtools-mcp` 支持） |
+| AI 宿主 | WorkBuddy / CodeBuddy，或任何支持 MCP 与 Agent Skills 的客户端 |
+| 扩展 | ScriptCat，装在开发用的独立配置目录中 |
+| 命令行 | `sctl`（安装脚本会一并安装） |
 
-## 必须由本人完成的 4 件事
+## 需要手动完成的步骤
 
-AI 会跑完其余全部步骤。这四件涉及账号、登录态与授权，必须本人操作：
+以下操作涉及账号、登录态或授权，AI 代理无法代做。部署时会被一次性列出：
 
-1. 连接器管理页对 `chrome-devtools` 点「信任」，必要时重启宿主
-2. 在 **EdgeAgent 窗口**装 ScriptCat / 需要的扩展、登录目标网站、选择外部接入权限策略
-3. 终端跑 `sctl connect`，把一次性 8 位码输入**该窗口**的 ScriptCat（2 分钟有效、不进对话、不进日志）
-4. 安装 WorkBuddy browser use 扩展（设置 → 智能体 → 浏览器操控）
+1. 在连接器管理页对 `chrome-devtools` 点「信任」，必要时重启宿主。
+2. 在开发用的浏览器窗口中安装 ScriptCat 等扩展、登录目标网站、选择外部接入权限策略。
+3. 在终端执行 `sctl connect`，把一次性配对码输入该窗口的 ScriptCat。
+4. 安装 WorkBuddy browser use 扩展（设置 → 智能体 → 浏览器操控）。
 
-> 日常 Edge 里的 ScriptCat **不要**也去 Enroll，否则两个实例连同一个 `sctl serve`，写操作可能落到正在用的那套脚本上。
+配对码只在终端显示一次、有效期约 2 分钟，不应写入对话或日志。日常浏览器中的 ScriptCat 不要重复接入同一个 `sctl` 服务，否则写操作可能落到另一套脚本上。
+
+## 验收与排障
+
+`scripts/doctor.ps1` 是只读自检，检查配置、Node、MCP 参数、端口与配置目录；`scripts/probe-mcp.mjs` 直接通过 stdio JSON-RPC 验证 MCP 握手与 `list_pages`。两者都不会启动或结束浏览器进程。
+
+常见问题（调试端口不生效、AI 启动的浏览器进程被回收、MCP 工具组消失、外部接入状态异常）及实测结论见 [`docs/troubleshooting.md`](docs/troubleshooting.md)，CLI 参数含义见 [`docs/mcp-parameters.md`](docs/mcp-parameters.md)。
 
 ## 目录
 
 ```
-├── SKILL.md                       # ★ Agent Skill 入口：SOP、硬知识、红线、验收
+├── SKILL.md                            # Agent Skill 入口：步骤、分工、验收、红线
 ├── docs/
-│   ├── deployment-guide.md        # 完整部署指南（命令 + 解释）
-│   ├── architecture.md            # 组件分工与选型理由
-│   ├── mcp-parameters.md          # chrome-devtools-mcp 1.12.0 CLI 参数速查
-│   └── troubleshooting.md         # 排障速查表
+│   ├── deployment-guide.md             # 完整部署指南（命令与解释）
+│   ├── architecture.md                 # 组件分工与选型理由
+│   ├── mcp-parameters.md               # chrome-devtools-mcp 1.12.0 参数速查
+│   └── troubleshooting.md              # 排障速查表
 ├── scripts/
-│   ├── start-agent-edge.bat       # 启动独立 profile + 9222（幂等）
-│   ├── make-shortcut.ps1          # 桌面版 / AI 版快捷方式
-│   ├── start-agent-edge-detached.ps1  # AI 代启，脱离会话进程树
-│   ├── doctor.ps1                 # 只读自检
-│   └── probe-mcp.mjs              # stdio JSON-RPC 端到端探测
+│   ├── start-agent-edge.bat            # 启动独立配置目录与 9222（幂等）
+│   ├── make-shortcut.ps1               # 生成桌面版与 AI 版快捷方式
+│   ├── start-agent-edge-detached.ps1   # 由系统 shell 代启浏览器
+│   ├── doctor.ps1                      # 只读自检
+│   └── probe-mcp.mjs                   # stdio JSON-RPC 端到端探测
 ├── config/
-│   ├── mcp.json.example           # MCP 配置模板（含占位符）
-│   ├── package.json               # 锁定 chrome-devtools-mcp@1.12.0
+│   ├── mcp.json.example                # MCP 服务配置模板（含占位符）
+│   ├── package.json                    # 锁定 chrome-devtools-mcp@1.12.0
 │   └── package-lock.json
-├── LICENSE                        # MIT
+├── LICENSE                             # MIT
 └── .gitignore
 ```
 
 ## 安全与隐私
 
-- 仓库内**不含**任何真实用户名、本机绝对路径、Cookie、`control.token`、配对码、信任指纹或用户脚本源码；所有路径用 `%USERPROFILE%` 或 `<...>` 占位符。
-- `EdgeAgent\profile` 保存登录态与 Cookie，**不要备份到公开仓库、不要跨机器复制**。
-- ScriptCat 外部接入的「写操作 / 源码读取」权限策略默认是「需人工审批」；若改成「直接允许」，等于允许外部程序读源码、改脚本。请自行权衡。
-- `doctor.ps1` 是只读脚本，不启动也不结束任何进程；`probe-mcp.mjs` 只做握手和 `list_pages`。
+- 仓库中的路径均使用 `%USERPROFILE%` 或 `<...>` 占位符，不含真实用户名、绝对路径、Cookie、访问令牌、配对码或用户脚本源码。
+- 开发配置目录保存登录态与 Cookie，不要提交到版本库，也不要跨机器复制。
+- ScriptCat 外部接入的「写操作 / 源码读取」权限策略默认为「需人工审批」。改为「直接允许」意味着外部程序可读取源码并修改脚本，请按自己的使用环境权衡。
+- 自检与探测脚本只读；实际改动由 AI 代理按 `SKILL.md` 的步骤执行。
 
 ## 版本基线
 
-结论实测于 Edge 157.0.4341.42 / Node 22.22.2 / chrome-devtools-mcp 1.12.0 / sctl 0.3.0 / ScriptCat 1.5.0 / browser use 0.2.8（2026-11-07）。
-组件升级后请重新核对参数名与版本门槛，尤其是 `chrome-devtools-mcp` 的 CLI 参数。
+结论实测于 Microsoft Edge 157.0.4341.42、Node.js 22.22.2、chrome-devtools-mcp 1.12.0、sctl 0.3.0、ScriptCat 1.5.0、WorkBuddy browser use 0.2.8（2026-11-07）。组件升级后请重新核对参数名与版本门槛，尤其是 `chrome-devtools-mcp` 的命令行参数。
+
+## 反馈与贡献
+
+遇到问题请提交 [Issue](https://github.com/HANJP98/scriptcat-dev-env-skill/issues)；如果在其他版本组合上实测到差异，欢迎通过 Pull Request 更新 `docs/` 中的结论。
 
 ## 相关项目
 
-- [ScriptCat（脚本猫）](https://docs.scriptcat.org/) — 运行器
-- [sctl](https://github.com/scriptscat/sctl) — 命令行 / AI 外部接入
-- [chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) — 页面调试
-- 官方 skills：`scriptscat/scriptcat`、`scriptscat/sctl`（写法规则与 sctl 用法，别和本 skill 重复）
+- [ScriptCat（脚本猫）](https://docs.scriptcat.org/) — 用户脚本运行器
+- [sctl](https://github.com/scriptscat/sctl) — 命令行工具与 AI 外部接入
+- [chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) — 页面调试 MCP 服务
+- 官方 skills：`scriptscat/scriptcat`、`scriptscat/sctl`（脚本写法规则与 sctl 用法，本仓库不重复）
 
 ## License
 
