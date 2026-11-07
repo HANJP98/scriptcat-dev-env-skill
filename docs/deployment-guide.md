@@ -1,6 +1,6 @@
 # 部署指南
 
-> 本文件是 `SKILL.md` 里 15 步 SOP 的展开版。**先读 `SKILL.md` 了解分工与红线**，再按本文执行。
+> 本文件是 `SKILL.md` 里 13 步部署流程的展开版。**先读 `SKILL.md` 了解分工与红线**，再按本文执行。
 > 所有命令在 Windows PowerShell 5.1 / Git Bash 实测过。路径里的 `<...>` 必须替换为本机实际探测值。
 
 ## 占位符
@@ -187,9 +187,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<EDGEAGENT_DIR>\start-agent
 
 脚本是幂等的：CDP 已就绪时不会重复开窗。
 
-## 9. 同步运行副本（AI）
+## 9. 核对运行副本（AI）
 
-把 `scripts/` 的 5 个文件放到 `%USERPROFILE%\EdgeAgent\` 作为运行副本——快捷方式和 `mcp.json` 引用的都是这份；`config/package*.json` 用于锁定 MCP 版本。
+第 4 步已把 `scripts/` 的 5 个文件放到 `<EDGEAGENT_DIR>\`；这里核对运行副本与仓库模板一致，快捷方式和 `mcp.json` 引用的都是这份。`config/package*.json` 用于锁定 MCP 版本。
 
 独立配置目录 `profile\` 不进版本库、不跨机器复制。
 
@@ -221,7 +221,7 @@ sctl status; sctl scriptcats; sctl get; sctl browsers
 
 ## 快速复验（环境已经在跑时）
 
-```bash
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\EdgeAgent\doctor.ps1"
 node "%USERPROFILE%\EdgeAgent\probe-mcp.mjs"
 sctl status

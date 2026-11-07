@@ -50,10 +50,10 @@ Chromium 136+ 起，对**默认** `user-data-dir` 会忽略 `--remote-debugging-
 ## 写脚本的验证闭环
 
 ```
-1. scripts_install_request / scripts_edit_request   装或改脚本
+1. sctl install / sctl edit <uuid> -f edits.json   装或改脚本
      └ 若权限策略=需人工审批，确认页由用户点，不要循环重试
 2. MCP navigate_page / new_page                    打开目标网址触发注入
-     └ 页面脚本不能用 scripts_run 跑（官方限制）
+     └ 页面脚本不能用 sctl run 跑（官方限制）
 3. MCP take_snapshot / list_console_messages /
         list_network_requests                      观察脚本对页面的实际效果
 4. 脚本内部状态 → 让它自己 GM_log / console.log，再从 console 读

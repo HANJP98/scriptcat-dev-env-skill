@@ -23,7 +23,7 @@
 | 第二个浏览器进程自己退出、调试端口没重复开 | 同一 `--user-data-dir` 有单实例锁，URL 被转发给已有实例 | 一个 profile 同时只跑一个主进程 |
 | 9222 显示 LISTENING 但 MCP 连不上，占用者是残留主进程 | 僵尸进程树还占着端口 | `Get-CimInstance Win32_Process -Filter "Name='msedge.exe'"` 找主进程（`CommandLine` 不含 `--type=`），确认后 `taskkill /PID <pid> /T /F` |
 | 换了机器后 profile 里的登录态全部失效 | Cookie 用 DPAPI / App-Bound Encryption 加密，绑定 Windows 用户账户（部分版本还绑 exe 路径） | 同机同账户复制有效，**跨机器 / 跨账户一定解不开**；别把 `profile\` 当可迁移备份 |
-| 确实要重建 profile | 里面有登录态、Cookie、扩展和脚本 | 用回收站删（`Microsoft.VisualBasic.FileIO.FileSystem::DeleteDirectory` + `RecycleOption.SendToRecycleBin`），**删完就停手，不要清空回收站** |
+| 确实要重建 profile | 里面有登录态、Cookie、扩展和脚本 | 用回收站删（`Microsoft.VisualBasic.FileIO.FileSystem::DeleteDirectory` + `RecycleOption.SendToRecycleBin`），**删完就停手，不要清空回收站**；部分 .NET 接口会在删除成功后仍抛异常，以原路径是否已消失复查为准 |
 
 ## sctl / ScriptCat
 
@@ -37,7 +37,7 @@
 | `sctl status` 一直 `extension connected: false` | 外部接入没开 / 码输到了别的 ScriptCat 实例 | 确认是 **EdgeAgent 窗口**的 ScriptCat；检查开关地址 `ws://127.0.0.1:8643`；核对 `sctl scriptcats` |
 | `scripts_*` 改到了正在用的脚本 | 两个 ScriptCat 实例（日常 Edge 也 Enroll 了）连同一个 `sctl serve` | 日常 Edge 的 ScriptCat 不要 Enroll；两个都要连就用 `--scriptcat <name>` 显式指定 |
 | `sctl run --help` → `unknown command "run" for "sctl"` | `run` / `logs` 要求 sctl **> 0.3.0** 且 ScriptCat **> 1.5.0** | 当前版本没这条链路；退路见下 |
-| 脚本日志读不到 | 同上，且 `scripts_run` 不支持页面脚本 | 页面脚本走 MCP 的 `list_console_messages` / `list_network_requests`；后台脚本让脚本 `GM_log`，再用 CDP MCP 打开 ScriptCat 日志扩展页 + `take_snapshot` |
+| 脚本日志读不到 | 同上，且 `sctl run` 不支持页面脚本 | 页面脚本走 MCP 的 `list_console_messages` / `list_network_requests`；后台脚本让脚本 `GM_log`，再用 CDP MCP 打开 ScriptCat 日志扩展页 + `take_snapshot` |
 | `sctl --help` 里列着 `tabs` / `page` / `debug` / `cdp` / `cookies` | 这些是给 **sctl Browser 扩展**用的 | 本方案不装该扩展，这些命令用不了，别误以为能力已在 |
 
 ## AI skill / 宿主
@@ -61,7 +61,7 @@
 
 ## 三分钟快速复验
 
-```bash
+```powershell
 # 1) 静态自检（应「通过 N 项 / 警告 0 项 / 失败 0 项」）
 powershell -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\EdgeAgent\doctor.ps1"
 

@@ -55,8 +55,8 @@ license: MIT
 | 6 | 装 sctl | **AI** | `irm https://raw.githubusercontent.com/scriptscat/sctl/main/scripts/install.ps1 \| iex`；临时加 PATH；`sctl version` | 输出版本号 + commit |
 | 7 | 注册后台服务 | **AI**（被拦则转用户） | `sctl service install` + `sctl service status` | `daemon running at 127.0.0.1:8643`、`starts at login` |
 | 8 | 启动浏览器 | **AI**（若已授权） | 用系统 shell 执行快捷方式（`start-agent-edge-detached.ps1`），**不要**在 AI 会话内直接 `Start-Process` | CDP `/json/version` 返回 `Edg/...`，且 Edge 跨命令存活 |
-| 9 | 同步运行副本 | **AI** | 把 `scripts/` 的可移植文件复制到 `%USERPROFILE%\EdgeAgent\` 作为运行副本（快捷方式、`mcp.json` 引用的是这里） | 运行副本与仓库模板一致 |
-| 10 | **点信任 + 重启宿主** | **用户** | 连接器管理页 → 自定义连接器 → 对 `chrome-devtools` 点**信任**；必要时重启宿主 | 出现 `mcp__chrome-devtools__*` 工具组 |
+| 9 | 核对运行副本 | **AI** | 比对 `%USERPROFILE%\EdgeAgent\` 下的 5 个脚本与仓库 `scripts/` 模板；快捷方式与 `mcp.json` 引用的是运行副本 | 文件内容一致，编码符合要求 |
+| 10 | **点信任 + 重启宿主** | **用户** | 连接器管理页 → 自定义连接器 → 对 `chrome-devtools` 点**信任**；首次部署需重启宿主才能加载工具组，之后仅改 `mcp.json` 时重新点信任即可当场生效 | 出现 `mcp__chrome-devtools__*` 工具组 |
 | 11 | **装扩展 / 登录 / 权限策略** | **用户** | 在 **EdgeAgent 窗口**装 ScriptCat 及需要的扩展、登录目标网站；ScriptCat 工具 → 外部接入 → 打开开关、选权限策略 | 扩展页可见、开关已开 |
 | 12 | **配对** | **用户** | 终端 `sctl connect` → 把 8 位码输入 **EdgeAgent 窗口**的 ScriptCat「重新接入 / Enroll」；**日常 Edge 的 ScriptCat 不要也 Enroll** | `sctl status` → `extension connected: true`、`scriptcat: online` |
 | 13 | 端到端验收 | **AI** | `doctor.ps1`；`node probe-mcp.mjs`；MCP `list_pages` / `take_snapshot`；`sctl status` / `sctl scriptcats` / `sctl get` | 见下方验收清单 |
@@ -73,7 +73,7 @@ license: MIT
 - [ ] `sctl browsers` 为空（确认没装 sctl Browser）
 - [ ] 浏览器进程在**下一条独立命令**里仍存活（不是只在启动它的那条命令里活着）
 
-## 硬知识：踩过的坑（不要自己发明替代方案）
+## 实测结论
 
 | 现象 | 原因 / 结论 | 处理 |
 | --- | --- | --- |
@@ -85,13 +85,13 @@ license: MIT
 | `netstat` 查不到 8643，但服务明明在跑 | 该端口是 WebSocket 端点，某些会话的 TCP 表不可见 | 用 `Invoke-WebRequest http://127.0.0.1:8643/` 探测，返回 **`426 Upgrade Required` 就是正常** |
 | `sctl run` / `scripts_logs` 报 unknown command | `run` / `logs` 要求 sctl **> 0.3.0** 且 ScriptCat **> 1.5.0**；实测 0.3.0 / 1.5.0 都不满足 | 退回 console / network 路径；后台脚本让脚本自己 `GM_log`，再用 CDP MCP 打开 ScriptCat 日志页配合 `take_snapshot` 查看 |
 | `list_extensions` 说没装扩展，profile 里却有扩展目录 | 那是 Edge 内置组件 | 别据此判断扩展已装 |
-| 改过 `mcp.json` 后 MCP 工具组消失 | 信任指纹按整份服务配置计算 | 重新点信任并重启宿主 |
+| 改过 `mcp.json` 后 MCP 工具组消失 | 信任指纹按整份服务配置计算 | 重新点「信任」，当场生效；若同时改了命令行参数，还需重启 MCP 进程 |
 | `evaluate_script` 看不到脚本里的变量 / `GM_*` | 它跑在**页面主世界**，脚本猫在 isolated world | 让脚本自己 `GM_log` / `console.log` 输出，再从 console 读 |
 
 ## 写脚本时的验证闭环
 
-1. 用 `scripts_install_request` / `scripts_edit_request` 安装或编辑脚本（权限策略若设为「需人工审批」，确认页由用户点，**不要循环重试**）。
-2. **页面脚本不能用 `scripts_run` 跑**（官方限制），用 MCP 的 `navigate_page` / `new_page` 打开目标网址触发注入。
+1. 用 `sctl install <url|file>` / `sctl edit <uuid> -f edits.json` 安装或编辑脚本（权限策略若设为「需人工审批」，确认页由用户点，**不要循环重试**）。
+2. **页面脚本不能用 `sctl run` 跑**（官方限制），用 MCP 的 `navigate_page` / `new_page` 打开目标网址触发注入。
 3. MCP 的 `take_snapshot` / `list_console_messages` / `list_network_requests` 观察脚本对页面产生的实际效果。
 4. 后台 / 定时脚本的日志：受上表版本边界限制，按退路处理。
 5. 首次安装后，**新开一个会话再开始写脚本**——新装的 skill 在当次会话不会加载。
