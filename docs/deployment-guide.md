@@ -195,19 +195,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<EDGEAGENT_DIR>\start-agent
 
 ---
 
-## 10–13. 必须由用户完成（一次性列全）
+## 10–12. 必须由用户完成（一次性列全）
 
 | # | 操作 | 验收 |
 | --- | --- | --- |
 | 10 | 连接器管理页右上「自定义连接器」→ 对 `chrome-devtools` 点**信任**；必要时重启宿主 | 出现 `mcp__chrome-devtools__*` 工具组 |
 | 11 | 在 **EdgeAgent 窗口**装 ScriptCat 和需要的扩展、登录目标网站；ScriptCat 工具 → 外部接入 → 打开开关（保持 `ws://127.0.0.1:8643`）、选择权限策略 | 扩展页可见、开关已开 |
 | 12 | 终端 `sctl connect` → 把 8 位码输入**该窗口**的 ScriptCat「重新接入 / Enroll」 | `sctl status` → `extension connected: true` |
-| 13 | 宿主「设置 > 智能体 > 浏览器操控」安装 Edge 扩展 | `browsers_list` 出现 `type: extension` 的 Edge |
 
 配对码 2 分钟有效、只显示一次、不进对话也不进日志；过期重跑 `sctl connect`。
 **日常 Edge 里的 ScriptCat 不要也 Enroll**，避免两个实例连同一个 `sctl serve`，导致 `scripts_*` 写到正在用的那套脚本上。真要两个都连，用 `--scriptcat <name>` 显式指定并用 `sctl scriptcats` 核对。
 
-## 14. 端到端验收（AI）
+## 13. 端到端验收（AI）
 
 ```bash
 powershell -NoProfile -ExecutionPolicy Bypass -File "<EDGEAGENT_DIR>\doctor.ps1"
@@ -220,7 +219,7 @@ sctl status; sctl scriptcats; sctl get; sctl browsers
 
 参考值（2026-11-07 实机）：`doctor.ps1` 30 项通过 / 0 警告 / 0 失败；`probe-mcp.mjs` 拿到 37 个工具（含 5 个扩展工具）、`RESULT: PASS`；`sctl get` 能列出脚本；`sctl browsers` 为空。
 
-## 15. 回头订正本仓库（AI）
+## 14. 回头订正本仓库（AI）
 
 把实际版本 / 路径、第 7/10/12 步的输出、遇到的失败与退路写回本仓库的 `SKILL.md` / `docs/`，提交并推送。**本仓库是下次重建的唯一依据**，必须与实况一致——不要只写工作日志就结束，也不要在别处另存一份实况文档；含账号、绝对路径、信任指纹、脚本名的本机实况不进公开仓库。
 

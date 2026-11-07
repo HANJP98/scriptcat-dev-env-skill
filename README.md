@@ -4,7 +4,7 @@
 
 一个 [Agent Skill](https://agentskills.io/)：让 AI 代理在 Windows 上搭建、重建并排查「用[脚本猫 ScriptCat](https://docs.scriptcat.org/) 开发和调试油猴脚本」的完整环境。
 
-> **English**: An Agent Skill that teaches an AI agent how to set up, rebuild and troubleshoot a Windows userscript development environment. It combines a dedicated Microsoft Edge profile driven by [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) over CDP, ScriptCat External Access via [`sctl`](https://github.com/scriptscat/sctl), the two official ScriptCat skills, and WorkBuddy browser use for the everyday profile. The repository ships `SKILL.md`, portable launcher/diagnostic scripts, configuration templates and troubleshooting notes. It contains no machine-specific values. Quick start: install it as a skill (`npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y`), open a new session, then ask the agent to rebuild the userscript development environment. Requirements: Windows 10/11, Edge Chromium 136+, Node.js 20.19+/22.12+, an AI client with MCP and Agent Skills support. MIT licensed.
+> **项目概览**：仓库提供 `SKILL.md`、部署与架构文档、启动器与自检脚本、配置模板，不含本机路径或凭据。快速开始：`npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y`，新开会话后让 AI 代理重建环境。前置条件：Windows 10/11、Edge Chromium 136+、Node.js 20.19+/22.12+、支持 MCP 与 Agent Skills 的 AI 宿主。MIT 许可。
 
 ---
 
@@ -29,7 +29,6 @@ AI 代理读取 `SKILL.md` 后，可自行完成环境探查、安装依赖、�
 | 某条链路失效（调试端口连不上、外部接入掉线、MCP 工具组消失） | 适用 |
 | 判断某个操作该走哪条工具链 | 适用 |
 | 只想写一个 `.user.js`，不需要部署环境 | 不适用，用官方 `scriptcat-userscript` skill |
-| 只操作日常网页 | 不适用，用 browser use |
 | macOS / Linux | 不适用，脚本与结论基于 Windows 实测 |
 
 ## 组件分工
@@ -39,9 +38,8 @@ AI 代理读取 `SKILL.md` 后，可自行完成环境探查、安装依赖、�
 | `chrome-devtools-mcp` 1.12.0 | 独立开发配置目录 | CDP `9222` | DOM、控制台、网络请求、截图、执行 JS、性能分析 |
 | `sctl` + ScriptCat 外部接入 | 同一开发配置目录 | WebSocket `8643` | 列出、读取、安装、编辑、启停、删除脚本 |
 | 官方 skill `scriptcat-userscript`、`sctl` | 用户级 skills 目录 | 本地文件 | 脚本写法规则、骨架与静态检查、sctl 命令用法 |
-| WorkBuddy browser use | 日常浏览器默认配置 | 扩展桥接 | 日常页面操作，复用已有登录态 |
 
-三条通道可同时运行，同一任务内不要混用。开发配置目录独立保存扩展、脚本与登录态，与日常上网互不干扰。
+两条通道可同时运行，同一任务内不要混用。开发配置目录独立保存扩展、脚本与登录态，与日常上网互不干扰。
 
 **不安装 `sctl Browser` 扩展**：它的页面调试能力通过 `chrome.debugger` 附着标签页，与 CDP MCP 争用同一目标；CDP MCP 已覆盖这部分能力。ScriptCat 外部接入只走扩展消息，不占用调试器，因此与 `9222` 不冲突。
 
@@ -51,9 +49,6 @@ flowchart LR
     SC["ScriptCat 扩展<br/>脚本 + 外部接入"]
     CDP["CDP 9222"]
   end
-  subgraph DAILY["日常用 · 默认配置目录"]
-    BU["browser use 扩展"]
-  end
   AI["AI 代理"]
   MCP["chrome-devtools-mcp 1.12.0"]
   SCTL["sctl serve 8643"]
@@ -62,10 +57,8 @@ flowchart LR
   SCTL <-->|WebSocket| SC
   AI -->|MCP 工具| MCP
   MCP <-->|CDP| CDP
-  AI -->|"browser use 工具"| BU
 
   DEV -.->|"扩展 / 脚本 / 登录态持久化"| P[("独立配置目录")]
-  DAILY -.-> P2[("日常配置目录")]
 ```
 
 ## 快速开始
@@ -117,7 +110,6 @@ npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y
 1. 在连接器管理页对 `chrome-devtools` 点「信任」，必要时重启宿主。
 2. 在开发用的浏览器窗口中安装 ScriptCat 等扩展、登录目标网站、选择外部接入权限策略。
 3. 在终端执行 `sctl connect`，把一次性配对码输入该窗口的 ScriptCat。
-4. 安装 WorkBuddy browser use 扩展（设置 → 智能体 → 浏览器操控）。
 
 配对码只在终端显示一次、有效期约 2 分钟，不应写入对话或日志。日常浏览器中的 ScriptCat 不要重复接入同一个 `sctl` 服务，否则写操作可能落到另一套脚本上。
 
@@ -159,7 +151,7 @@ npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y
 
 ## 版本基线
 
-结论实测于 Microsoft Edge 157.0.4341.42、Node.js 22.22.2、chrome-devtools-mcp 1.12.0、sctl 0.3.0、ScriptCat 1.5.0、WorkBuddy browser use 0.2.8（2026-11-07）。组件升级后请重新核对参数名与版本门槛，尤其是 `chrome-devtools-mcp` 的命令行参数。
+结论实测于 Microsoft Edge 157.0.4341.42、Node.js 22.22.2、chrome-devtools-mcp 1.12.0、sctl 0.3.0、ScriptCat 1.5.0（2026-11-07）。组件升级后请重新核对参数名与版本门槛，尤其是 `chrome-devtools-mcp` 的命令行参数。
 
 ## 反馈与贡献
 

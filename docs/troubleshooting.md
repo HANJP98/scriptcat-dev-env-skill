@@ -46,8 +46,6 @@
 | --- | --- | --- |
 | `npx skills add ... -a workbuddy` 装完宿主读不到 | `npx skills` 有效名单里**没有** `workbuddy` | 用 `-a codebuddy`；再用 Junction 把实体暴露给宿主实际读取的 skills 目录 |
 | 新装的 skill 不生效 | 当次会话不加载新 skill | 开一个新会话 |
-| `browser use` 返回两个同名 Edge | 宿主扩展同时装在日常 profile 和开发 profile | 每次任务重新 `browsers_list` + `user_open_tabs`，按标签页内容区分；**id 不固定** |
-| `type: desktop` 没有日常登录态 | 那是宿主内置浏览器（IAB），只有当前会话标签页 | 选 `type: extension` |
 | `evaluate_script` 看不到脚本里的变量 / `GM_*` | 跑在**页面主世界**，脚本猫在 isolated world | 让脚本自己 `GM_log` / `console.log` 输出 |
 | PowerShell 里 `New-Object -ComObject` / `Add-Type` 被拒绝 | 部分 AI 客户端的安全策略限制主会话 | 把逻辑写成 `.ps1` 文件，用子进程执行：`powershell -NoProfile -ExecutionPolicy Bypass -File <script.ps1>` |
 
@@ -84,7 +82,7 @@ sctl browsers      # 本方案应为空
 
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |
-| AI 会话里 `git push` 报 `Empty reply from server` | 会话注入了 `http_proxy`，git 走该代理时 `CONNECT github.com:443` 握手失败；去掉代理后直连 `github.com:443` 又超时 | **不要反复重试 push**。在普通终端里推；或若 `api.github.com` 可直连，改走 GitHub REST / Git Data API（逐文件建 blob → tree → commit → 更新 `refs/heads/main`） |
+| AI 会话里 `git push` 报 `Empty reply from server` | 会话注入了 `http_proxy`，git 走该代理时 `CONNECT github.com:443` 握手失败；去掉代理后直连 `github.com:443` 又超时 | **不要反复重试 push**。优先用 GitHub MCP 提交文件（`push_files` / `create_or_update_file`）；没有 MCP 时可在普通终端推送，或改走 GitHub REST / Git Data API |
 | 用 Git Data API 给空仓库建 blob 报 `409 Git Repository is empty` | 空仓库的对象库尚未初始化 | 先用 Contents API 写入一个文件（如 README）激活仓库，再建 blob |
 | API 发布后本地 `git log` 与远端 HEAD 的 SHA 不一致 | GitHub 规范化了 commit 元数据，但**文件树哈希一致**、内容完全相同 | 在能连通 `github.com` 的终端里执行一次 `git pull --rebase` 对齐历史，之后正常 `git push` |
 
@@ -94,5 +92,5 @@ sctl browsers      # 本方案应为空
 
 - `doctor.ps1` 完整输出、`probe-mcp.mjs` 输出、`sctl status` 输出
 - Edge 版本、Node 版本、`chrome-devtools-mcp` 版本、sctl 版本、ScriptCat 版本
-- 具体是哪一条链路断了（CDP 9222 / sctl 8643 / browser use 扩展桥接）
+- 具体是哪一条链路断了（CDP 9222 / sctl 8643）
 - **不要**贴 `control.token`、配对码、Cookie、脚本源码或含密钥的日志

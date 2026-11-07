@@ -1,22 +1,22 @@
 ---
 name: scriptcat-dev-env-skill
-description: 在 Windows 上搭建、重建或排查「用脚本猫 ScriptCat 开发和调试油猴脚本」的 AI 开发环境（Edge 独立 profile + chrome-devtools-mcp 9222 + sctl 8643 + 官方 AI skills + WorkBuddy browser use）。当用户要求部署/重装/换机重建这套环境、环境某条链路失效、或询问 CDP MCP 与 sctl / sctl Browser / browser use 如何分工时使用。也覆盖「AI 代启浏览器为何会被回收」「Chromium 136+ 为何必须独立 profile」等实测结论。
+description: 在 Windows 上搭建、重建或排查「用脚本猫 ScriptCat 开发和调试油猴脚本」的 AI 开发环境（Edge 独立 profile + chrome-devtools-mcp 9222 + sctl 8643 + 官方 AI skills）。当用户要求部署/重装/换机重建这套环境、环境某条链路失效、或询问 CDP MCP 与 sctl / sctl Browser 如何分工时使用。也覆盖「AI 代启浏览器为何会被回收」「Chromium 136+ 为何必须独立 profile」等实测结论。
 license: MIT
 ---
 
 # 油猴脚本开发环境（ScriptCat + AI）
 
 这套环境的**唯一目的**是写、装、调试油猴脚本（userscript），运行器是[脚本猫 ScriptCat](https://docs.scriptcat.org/)。
-它把四件事拆到互不干扰的通道上，让 AI 能完成「改脚本 → 装进浏览器 → 打开目标页 → 看 console/network 效果」的完整闭环。
+它把脚本管理与页面调试拆到互不干扰的通道上，让 AI 能完成「改脚本 → 装进浏览器 → 打开目标页 → 看 console/network 效果」的完整闭环。
 
 ## 何时使用
 
 - 重装系统 / 换机器后重建这套环境
 - 环境某条链路断了（CDP 连不上、sctl 未接入、MCP 工具组消失、页面脚本不生效）
-- 需要判断某个操作该走 CDP MCP、sctl 还是 browser use
+- 需要判断某个操作该走 CDP MCP 还是 sctl
 - 用户问「脚本猫提供的调试扩展和 CDP MCP 哪个好」
 
-**不适用**：只想写一个 `.user.js` 而不需要部署环境 → 直接用官方 `scriptcat-userscript` skill；只操作日常网页 → 用 browser use。
+**不适用**：只想写一个 `.user.js` 而不需要部署环境 → 直接用官方 `scriptcat-userscript` skill。
 
 ## 三条工作原则（必须遵守）
 
@@ -35,12 +35,11 @@ license: MIT
 | `chrome-devtools-mcp` 1.12.0 | `EdgeAgent` 独立 profile | CDP `9222` | 页面深度调试：DOM / a11y / console / network / 截图 / 执行 JS / 性能 trace / Lighthouse / 扩展页 DOM |
 | `sctl` + ScriptCat「外部接入」 | 同一 `EdgeAgent` profile | WS `8643` | 脚本管理：列出 / 读源码 / 安装 / 编辑 / 启停 / 删除 |
 | 官方 skill `scriptcat-userscript`、`sctl` | 用户级 skills 目录 | 本地文件 | 写脚本的规则、骨架、静态检查器；sctl 命令用法 |
-| WorkBuddy browser use | 日常 Edge 默认 profile | 扩展桥接 | 日常上网 / 页面操作，复用已有登录态 |
 
 **明确不装 `sctl Browser` 扩展**：CDP MCP 已覆盖并超过它的页面侧能力；sctl Browser 的 `page`/`debug`/`cdp` 通过 `chrome.debugger` 附着标签页，与 CDP MCP 对同一 target **互斥**，不装就没有调试器争抢和「正在调试」信息栏。ScriptCat 外部接入只走扩展消息，不 attach debugger，与 9222 无冲突。
 代价仅是失去书签 / 历史 / 下载 / Cookie 管理，这些本就归日常浏览器。
 
-三条通道 9222 / 8643 / 扩展桥接可同时运行；**同一任务里不要混用工具链**。
+两条通道 9222 / 8643 可同时运行；**同一任务里不要混用工具链**。
 
 ## 部署工作流
 
@@ -62,11 +61,10 @@ license: MIT
 | 10 | **点信任 + 重启宿主** | **用户** | 连接器管理页 → 自定义连接器 → 对 `chrome-devtools` 点**信任**；必要时重启宿主 | 出现 `mcp__chrome-devtools__*` 工具组 |
 | 11 | **装扩展 / 登录 / 权限策略** | **用户** | 在 **EdgeAgent 窗口**装 ScriptCat 及需要的扩展、登录目标网站；ScriptCat 工具 → 外部接入 → 打开开关、选权限策略 | 扩展页可见、开关已开 |
 | 12 | **配对** | **用户** | 终端 `sctl connect` → 把 8 位码输入 **EdgeAgent 窗口**的 ScriptCat「重新接入 / Enroll」；**日常 Edge 的 ScriptCat 不要也 Enroll** | `sctl status` → `extension connected: true`、`scriptcat: online` |
-| 13 | **browser use 扩展** | **用户** | 宿主「设置 > 智能体 > 浏览器操控」→ 安装 Edge 扩展 | `browsers_list` 出现 `type: extension` 的 Edge |
-| 14 | 端到端验收 | **AI** | `doctor.ps1`；`node probe-mcp.mjs`；MCP `list_pages` / `take_snapshot`；`sctl status` / `sctl scriptcats` / `sctl get` | 见下方验收清单 |
-| 15 | **回头订正本仓库** | **AI** | 把实际版本 / 路径、第 7/10/12 步输出、失败与退路写回 `SKILL.md` / `docs/`，提交并推送 | 仓库与实况一致，无过时表述，无第二份文档源 |
+| 13 | 端到端验收 | **AI** | `doctor.ps1`；`node probe-mcp.mjs`；MCP `list_pages` / `take_snapshot`；`sctl status` / `sctl scriptcats` / `sctl get` | 见下方验收清单 |
+| 14 | **回头订正本仓库** | **AI** | 把实际版本 / 路径、第 7/10/12 步输出、失败与退路写回 `SKILL.md` / `docs/`，提交并推送 | 仓库与实况一致，无过时表述，无第二份文档源 |
 
-**只把第 10–13 步交给用户，一次性列全。** 配对码 2 分钟有效、只显示一次、不得进入对话或日志。
+**只把第 10–12 步交给用户，一次性列全。** 配对码 2 分钟有效、只显示一次、不得进入对话或日志。
 第 7 步若被安全策略拦截（某些 AI 会话禁用 `schtasks.exe`），直接转给用户并说明原因，**不要重试、不要找等价绕过**。
 
 ## 验收清单
@@ -90,8 +88,6 @@ license: MIT
 | `netstat` 查不到 8643，但服务明明在跑 | 该端口是 WebSocket 端点，某些会话的 TCP 表不可见 | 用 `Invoke-WebRequest http://127.0.0.1:8643/` 探测，返回 **`426 Upgrade Required` 就是正常** |
 | `sctl run` / `scripts_logs` 报 unknown command | `run` / `logs` 要求 sctl **> 0.3.0** 且 ScriptCat **> 1.5.0**；实测 0.3.0 / 1.5.0 都不满足 | 退回 console / network 路径；后台脚本让脚本自己 `GM_log`，再用 CDP MCP 打开 ScriptCat 日志页配合 `take_snapshot` 查看 |
 | `list_extensions` 说没装扩展，profile 里却有扩展目录 | 那是 Edge 内置组件 | 别据此判断扩展已装 |
-| browser use 返回两个同名 Edge | 宿主扩展同时装在日常 profile 和 EdgeAgent profile，`browser_info` 区分不出来 | 每次任务开始重新 `browsers_list` + `user_open_tabs`，按标签页内容判断，**id 不固定**，别沿用上次编号 |
-| browser use 的 `type: desktop` 没有登录态 | 那是宿主内置浏览器（IAB），只有当前会话标签页 | 要复用日常 profile 必须选 `type: extension` |
 | 改过 `mcp.json` 后 MCP 工具组消失 | 信任指纹按整份服务配置计算 | 重新点信任并重启宿主 |
 | `evaluate_script` 看不到脚本里的变量 / `GM_*` | 它跑在**页面主世界**，脚本猫在 isolated world | 让脚本自己 `GM_log` / `console.log` 输出，再从 console 读 |
 
@@ -117,7 +113,7 @@ license: MIT
 | 文件 | 用途 |
 | --- | --- |
 | `docs/deployment-guide.md` | 完整部署指南（逐步命令与解释） |
-| `docs/architecture.md` | 四组件分工、链路与选型理由 |
+| `docs/architecture.md` | 组件分工、链路与选型理由 |
 | `docs/mcp-parameters.md` | chrome-devtools-mcp 1.12.0 CLI 参数速查（连接 / 工具集 / 路径 / 安全 / 截图） |
 | `docs/troubleshooting.md` | 排障速查表（含原始输出示例与发布网络问题） |
 | `scripts/start-agent-edge.bat` | 启动带独立 profile + 9222 的 Edge（幂等，CDP 握手检测） |
@@ -130,5 +126,5 @@ license: MIT
 
 ## 版本基线
 
-本 skill 的结论实测于：Microsoft Edge 157.0.4341.42 / Node 22.22.2 / chrome-devtools-mcp 1.12.0 / sctl 0.3.0 / ScriptCat 1.5.0 / WorkBuddy browser use 0.2.8（2026-11-07）。
+本 skill 的结论实测于：Microsoft Edge 157.0.4341.42 / Node 22.22.2 / chrome-devtools-mcp 1.12.0 / sctl 0.3.0 / ScriptCat 1.5.0（2026-11-07）。
 **任一组件升级后，参数名、子命令与版本门槛都要重新核对一遍**；`chrome-devtools-mcp` 的参数最容易随小版本漂移，务必对照 `node <entry> --help`。

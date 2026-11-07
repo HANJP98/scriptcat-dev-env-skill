@@ -1,17 +1,16 @@
 # 架构与选型
 
-## 一条主线，四个组件
+## 一条主线，三个组件
 
-这套环境只为一件事服务：**写 / 装 / 调试油猴脚本**。把这件事拆成「管脚本」「看页面」「日常上网」三类互不干扰的操作。
+这套环境只为一件事服务：**写 / 装 / 调试油猴脚本**。把这件事拆成「管脚本」「看页面」两类互不干扰的操作。
 
 | 组件 | 所在 profile | 通道 | 干什么 |
 | --- | --- | --- | --- |
 | `chrome-devtools-mcp` 1.12.0 | 开发用 `EdgeAgent` 独立 profile | CDP `9222` | 页面深度调试：DOM / a11y / console / network / 截图 / 执行 JS / 性能 trace / 堆快照 / Lighthouse / 扩展页 DOM |
 | `sctl` + ScriptCat「外部接入」 | 同一个 `EdgeAgent` profile | WebSocket `8643` | 脚本管理：列出 / 读源码 / 安装 / 编辑 / 启停 / 删除 |
 | 官方 skill `scriptcat-userscript`、`sctl` | 用户级 skills 目录 | 本地文件 | 写法规则、骨架、静态检查器；sctl 命令用法 |
-| WorkBuddy browser use | 日常 Edge 默认 profile | 扩展桥接 | 日常上网 / 页面操作，复用已有登录态 |
 
-三条通道端口和机制都不同，**可以同时运行**；但同一任务里不要混工具链（browser use 只用 `mcp__browser__*`，CDP MCP 与 sctl 各管各的）。
+两条通道端口和机制都不同，**可以同时运行**；但同一任务里不要混用工具链。
 
 ## 两个 profile，为什么
 
@@ -20,7 +19,7 @@ Chromium 136+ 起，对**默认** `user-data-dir` 会忽略 `--remote-debugging-
 于是自然形成两个 profile：
 
 - **`EdgeAgent`**：全新、干净、带 9222。装 ScriptCat 和调试用的扩展，登录测试网站。脚本、扩展、Cookie 全部持久化在 `EdgeAgent\profile\`。
-- **日常 Edge**：不带调试端口，保留原有登录态 / 书签 / 扩展，日常上网用，AI 通过 browser use 扩展操作。
+- **日常 Edge**：不带调试端口，保留原有登录态 / 书签 / 扩展，日常上网用，不接入本方案的工具链。
 
 > 独立 profile 是「全新」的，所以扩展和网站登录要在那个窗口里**做一次**。之后长期保留。
 > 反过来也别把 `EdgeAgent\profile` 当成干净沙箱：如果你往里装了脚本，它里面就是有生产脚本的，所有 `scripts_*` 写操作都会作用在它们身上。
@@ -40,7 +39,7 @@ Chromium 136+ 起，对**默认** `user-data-dir` 会忽略 `--remote-debugging-
 
 1. CDP MCP 已覆盖并**超过** sctl Browser 的页面侧能力（快照 / 点击 / 填入 / 截图 / console / 网络请求 / 执行 JS），还多出性能 trace、堆快照、Lighthouse、扩展页 DOM。
 2. sctl Browser 的 `page` / `debug` / `cdp` 会 attach `chrome.debugger`，浏览器顶部弹「正在调试」信息栏，5 分钟空闲自动断开；与 CDP MCP 抢同一标签页。不装就彻底消掉这个冲突。
-3. 让出的只有书签 / 历史 / 下载 / Cookie 管理 / tab group——本就属于日常浏览器，归 browser use。
+3. 让出的只有书签 / 历史 / 下载 / Cookie 管理 / tab group——本就属于日常浏览器。
 
 **安全模型也相反**，值得留意：
 
@@ -63,17 +62,6 @@ Chromium 136+ 起，对**默认** `user-data-dir` 会忽略 `--remote-debugging-
 ```
 
 版本门槛：`sctl run` / `scripts_logs` 要求 sctl **> 0.3.0** 且 ScriptCat **> 1.5.0**。实测 0.3.0 的 `--help` 里根本没有 `run` / `logs`，ScriptCat 1.5.0 恰在边界上，因此这条链路当时不可用。退路是让脚本 `GM_log`，再用 CDP MCP 打开 ScriptCat 的日志扩展页（靠 `--categoryExtensions`）配合 `take_snapshot` 读取。
-
-## browser use 的两种模式
-
-| 模式 | 是什么 | 有没有日常登录态 |
-| --- | --- | --- |
-| `type: desktop` | 宿主内置浏览器（IAB），只有当前会话标签页 | **没有** |
-| `type: extension` | 通过扩展操作你自己的 Edge | **有** |
-
-要「自己用的 profile」必须选 `type: extension`。
-
-**实测坑**：如果宿主扩展同时装在日常 profile 和 `EdgeAgent` profile，`browsers_list` 会返回**两个同名 Edge**，`extension_id` 和 `profile` 字段完全一样，`browser_info` 区分不出来。只能用 `user_open_tabs` 按标签页内容判断，且 **id 不固定**，每次任务开始都要重新确认，别沿用上次编号——否则会把页面操作打到写代码的 profile 上。
 
 ## 安全边界
 
