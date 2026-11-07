@@ -1,7 +1,7 @@
 # 部署指南
 
 > 本文件是 `SKILL.md` 里 15 步 SOP 的展开版。**先读 `SKILL.md` 了解分工与红线**，再按本文执行。
-> 所有命令在 Windows PowerShell 5.1 / Git Bash 实测过。路径里的 `<...>` 必须替换为实机探测值。
+> 所有命令在 Windows PowerShell 5.1 / Git Bash 实测过。路径里的 `<...>` 必须替换为本机实际探测值。
 
 ## 占位符
 
@@ -189,9 +189,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<EDGEAGENT_DIR>\start-agent
 
 ## 9. 同步运行副本（AI）
 
-把 `scripts/` 的 5 个文件放到 `%USERPROFILE%\EdgeAgent\` 作为实机运行副本——快捷方式和 `mcp.json` 引用的都是这份；`config/package*.json` 用于锁定 MCP 版本。
+把 `scripts/` 的 5 个文件放到 `%USERPROFILE%\EdgeAgent\` 作为运行副本——快捷方式和 `mcp.json` 引用的都是这份；`config/package*.json` 用于锁定 MCP 版本。
 
-**不要另建「备份」目录或第二份部署说明**：本仓库是唯一维护源，改了模板同步运行副本即可。`profile\` 不进公开仓库、不跨机器复制。
+独立配置目录 `profile\` 不进版本库、不跨机器复制。
 
 ---
 
@@ -217,13 +217,7 @@ sctl status; sctl scriptcats; sctl get; sctl browsers
 然后让 AI 实际调 MCP 工具：`list_pages` → `take_snapshot` → `evaluate_script` → `take_screenshot` → `navigate_page`。
 只做 `initialize` 握手不算验收通过。
 
-参考值（2026-11-07 实机）：`doctor.ps1` 30 项通过 / 0 警告 / 0 失败；`probe-mcp.mjs` 拿到 37 个工具（含 5 个扩展工具）、`RESULT: PASS`；`sctl get` 能列出脚本；`sctl browsers` 为空。
-
-## 14. 回头订正本仓库（AI）
-
-把实际版本 / 路径、第 7/10/12 步的输出、遇到的失败与退路写回本仓库的 `SKILL.md` / `docs/`，提交并推送。**本仓库是下次重建的唯一依据**，必须与实况一致——不要只写工作日志就结束，也不要在别处另存一份实况文档；含账号、绝对路径、信任指纹、脚本名的本机实况不进公开仓库。
-
----
+参考值（2026-11-07 实测环境）：`doctor.ps1` 30 项通过 / 0 警告 / 0 失败；`probe-mcp.mjs` 拿到 37 个工具（含 5 个扩展工具）、`RESULT: PASS`；`sctl get` 能列出脚本；`sctl browsers` 为空。
 
 ## 快速复验（环境已经在跑时）
 

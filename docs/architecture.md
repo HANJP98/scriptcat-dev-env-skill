@@ -67,6 +67,6 @@ Chromium 136+ 起，对**默认** `user-data-dir` 会忽略 `--remote-debugging-
 
 - 不外传登录态、Cookie、`%LOCALAPPDATA%\sctl\control.token`、配对码。
 - 读到的脚本源码可能含 API key / Cookie，不写进日志、不进对话、不进公开仓库。
-- `profile\` 目录不备份到公开仓库、不跨机器复制。
+- `profile\` 目录不进版本库、不跨机器复制。
 - 写操作前说明目标脚本，不做批量改动；权限策略由用户决定，AI 不擅自改。
 - 用户未授权时不代启浏览器；重启前若窗口有未提交内容，先提示。

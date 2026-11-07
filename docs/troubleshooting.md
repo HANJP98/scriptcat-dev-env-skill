@@ -1,6 +1,6 @@
 # 排障速查表
 
-> 按「现象 → 原因 → 处理」组织。都是实机踩过的，遇到时**先查表，不要自己发明新方案**。
+> 按「现象 → 原因 → 处理」组织。遇到问题时先查表，按表中结论处理。
 
 ## 浏览器 / CDP
 
@@ -77,16 +77,6 @@ sctl browsers      # 本方案应为空
 ```
 
 再让 AI 实际调一次 `list_pages` + `take_snapshot`：只做 `initialize` 握手不算验收通过。
-
-## 维护本仓库时的网络问题
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| AI 会话里 `git push` 报 `Empty reply from server` | 会话注入了 `http_proxy`，git 走该代理时 `CONNECT github.com:443` 握手失败；去掉代理后直连 `github.com:443` 又超时 | **不要反复重试 push**。优先用 GitHub MCP 提交文件（`push_files` / `create_or_update_file`）；没有 MCP 时可在普通终端推送，或改走 GitHub REST / Git Data API |
-| 用 Git Data API 给空仓库建 blob 报 `409 Git Repository is empty` | 空仓库的对象库尚未初始化 | 先用 Contents API 写入一个文件（如 README）激活仓库，再建 blob |
-| API 发布后本地 `git log` 与远端 HEAD 的 SHA 不一致 | GitHub 规范化了 commit 元数据，但**文件树哈希一致**、内容完全相同 | 在能连通 `github.com` 的终端里执行一次 `git pull --rebase` 对齐历史，之后正常 `git push` |
-
-发布 / 维护脚本里会读取本地凭证，**这类脚本一律不进仓库、不打印凭证值、完成后删除**。往公开仓库提交前按 `SKILL.md` 的脱敏红线逐条核对。
 
 ## 上报问题时该给什么
 

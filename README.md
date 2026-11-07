@@ -4,7 +4,7 @@
 
 一个 [Agent Skill](https://agentskills.io/)：让 AI 代理在 Windows 上搭建、重建并排查「用[脚本猫 ScriptCat](https://docs.scriptcat.org/) 开发和调试油猴脚本」的完整环境。
 
-> **项目概览**：仓库提供 `SKILL.md`、部署与架构文档、启动器与自检脚本、配置模板，不含本机路径或凭据。快速开始：`npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y`，新开会话后让 AI 代理重建环境。前置条件：Windows 10/11、Edge Chromium 136+、Node.js 20.19+/22.12+、支持 MCP 与 Agent Skills 的 AI 宿主。MIT 许可。
+> **项目概览**：仓库提供 `SKILL.md`、部署与架构文档、启动器与自检脚本、配置模板，不含本机路径或凭据。安装方式见「快速开始」。前置条件：Windows 10/11、Edge Chromium 136+、Node.js 20.19+/22.12+、支持 MCP 与 Agent Skills 的 AI 宿主。MIT 许可。
 
 ---
 
@@ -63,34 +63,13 @@ flowchart LR
 
 ## 快速开始
 
-### 方式 A：安装为 skill（推荐）
+把下面这句话粘贴给 AI 代理，它会安装这个 skill 并完成环境搭建：
 
-把仓库放进宿主的 skills 目录，之后直接对 AI 代理说「重建油猴脚本开发环境」。
-
-```powershell
-git clone https://github.com/HANJP98/scriptcat-dev-env-skill.git "$env:USERPROFILE\.codebuddy\skills\scriptcat-dev-env-skill"
-
-# 宿主读取 ~/.workbuddy/skills/ 时，用目录联接保持单一副本
-New-Item -ItemType Junction `
-  -Path "$env:USERPROFILE\.workbuddy\skills\scriptcat-dev-env-skill" `
-  -Target "$env:USERPROFILE\.codebuddy\skills\scriptcat-dev-env-skill"
+```text
+请安装 https://github.com/HANJP98/scriptcat-dev-env-skill 这个 Agent Skill，并按其中的 SKILL.md 在 Windows 上搭建脚本猫油猴脚本开发环境；需要我手动完成的步骤请一次性列出。
 ```
 
-若宿主直接读取 `~/.workbuddy/skills/`，克隆到该目录即可，无需目录联接。也可以使用官方安装器（宿主在支持列表内时）：
-
-```bash
-npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y
-```
-
-> 新安装的 skill 在当次会话不会加载，请开一个新会话再开始写脚本。
-
-### 方式 B：手动部署
-
-按 [`docs/deployment-guide.md`](docs/deployment-guide.md) 逐步执行。`scripts/` 下的文件可直接使用，`config/` 中的占位符需替换为本机实际探测值。
-
-### 方式 C：换机或重装
-
-克隆本仓库 → 在新会话中让 AI 代理读取 `SKILL.md` → 它会执行所有可由脚本和命令完成的步骤，并把需要账号或授权的操作一次性列出。
+新安装的 skill 在当次会话不会加载，请新开一个会话再继续。手动部署步骤见 [`docs/deployment-guide.md`](docs/deployment-guide.md)。
 
 ## 前置条件
 
@@ -155,7 +134,7 @@ npx skills add HANJP98/scriptcat-dev-env-skill -g -a codebuddy -y
 
 ## 反馈与贡献
 
-遇到问题请提交 [Issue](https://github.com/HANJP98/scriptcat-dev-env-skill/issues)；如果在其他版本组合上实测到差异，欢迎通过 Pull Request 更新 `docs/` 中的结论。
+遇到问题请提交 [Issue](https://github.com/HANJP98/scriptcat-dev-env-skill/issues)；欢迎通过 Pull Request 补充其他版本组合下的实测结论。
 
 ## 相关项目
 
