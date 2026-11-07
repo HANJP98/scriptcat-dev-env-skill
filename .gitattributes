@@ -1,0 +1,12 @@
+# Windows batch/PowerShell files need CRLF; everything else uses LF in the repo.
+* text=auto
+
+*.bat     text eol=crlf
+*.ps1     text eol=crlf
+*.md      text eol=lf
+*.mjs     text eol=lf
+*.json    text eol=lf
+*.example text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+LICENSE   text eol=lf

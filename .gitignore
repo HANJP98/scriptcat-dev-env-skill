@@ -1,0 +1,26 @@
+# Never commit real profiles, tokens, or machine-specific generated files.
+# The whole point of the dedicated profile is that it holds logins + cookies.
+profile/
+User Data/
+*.lnk
+node_modules/
+out/
+*.png
+*.log
+
+# Credentials and local state
+control.token
+mcp-approvals.json
+.env
+*.secret
+*.key
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Local git identity (the repo uses a per-repo identity, not global)
+.gitconfig
